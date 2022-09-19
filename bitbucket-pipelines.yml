@@ -1,0 +1,74 @@
+image: python:3.9-slim
+definitions:
+  services:
+    docker:
+      memory: 2024
+
+pipelines:
+  branches:
+    development:
+      - step:
+          name: Deploy to DEV
+          deployment: Development
+          script:
+            # Connect to AWS cli
+            - pip3 install awscli
+            - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            - aws configure set region $AWS_REGION
+            
+            # Store IMG to ECR
+            - eval $(aws ecr get-login --no-include-email --region $AWS_REGION | sed 's;https://;;g')
+            - docker build -t my_image .
+            - docker tag my_image:latest $ECR
+            - docker push $ECR
+
+          services:
+            - docker
+          caches:
+            - pip
+            - docker    
+    staging:
+    - step:
+        name: Deploy to STAG
+        deployment: Staging
+        script:
+            # Connect to AWS cli
+            - pip3 install awscli
+            - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            - aws configure set region $AWS_REGION
+            
+            # Store IMG to ECR
+            - eval $(aws ecr get-login --no-include-email --region $AWS_REGION | sed 's;https://;;g')
+            - docker build -t my_image .
+            - docker tag my_image:latest $ECR
+            - docker push $ECR
+
+        services:
+          - docker
+        caches:
+          - pip
+          - docker
+    master:
+    - step:
+        name: Deploy to PROD
+        deployment: Production
+        script:
+            # Connect to AWS cli
+            - pip3 install awscli
+            - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            - aws configure set region $AWS_REGION
+            
+            # Store IMG to ECR
+            - eval $(aws ecr get-login --no-include-email --region $AWS_REGION | sed 's;https://;;g')
+            - docker build -t my_image .
+            - docker tag my_image:latest $ECR
+            - docker push $ECR
+
+        services:
+          - docker
+        caches:
+          - pip
+          - docker
